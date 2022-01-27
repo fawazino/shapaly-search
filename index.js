@@ -51,7 +51,7 @@ app.get('/', (req,res)=>{
     res.json('welcome to my movies api')
 })
 
-app.get('/news', (req,res)=>{
+app.get('/movies', (req,res)=>{
   res.json(movies)
 })
 
