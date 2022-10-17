@@ -1,58 +1,62 @@
-const port = process.env.PORT || 3000
+const port = process.env.PORT || 3001
 const express = require('express')
 const axios = require('axios')
 const cheerio = require('cheerio')
 const { response } = require('express')
 const res = require('express/lib/response')
+const bodyParser = require('body-parser')
 
 const app = express()
-const movieSites = [
-    {
-    site: '02tv',
-    link: 'https://o2tvseriesz.com/hollywood/'
-    },
-    {
-    site: 'netnaija',
-    link: 'https://www.thenetnaija.co/videos/movies'
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: true }))
+
+
+
+const fetchProducts = async (searchParam) => {
+    
+    try {
+        const response = await axios.get(`https://www.jumia.com.ng/catalog/?q=${searchParam}`);
+ 
+        const html = response.data;
+      
+        const $ = cheerio.load(html);
+        console.log(html)
+
+        const products = [];
+ 
+  $('article.prd._fb.col.c-prd').each((_idx, el) => {
+            const product = $(el)
+            const url = product.find('a.core').attr('href')
+            const image = product.find('img.img').attr('src')
+            const title = product.find('h3.name').text()
+            const price = product.find('div.prc').text()
+ 
+            products.push({
+                url:"https://jumia.com.ng" +url,
+                image,
+                title,
+                price
+            })
+        });
+
+ 
+        return products;
+
+    } catch (error) {
+        throw error;
     }
-]
-const movies = [] 
-movieSites.forEach(movieSite => {
-    axios.get(movieSite.link)
-    .then(response=>{
-        const html = response.data
-        const $ = cheerio.load(html)
-        if (movieSite.site == '02tv') {
-            $('a:contains("Download")', html).each(function(){
-                const title = $(this).text()
-                const url = $(this).attr('href')
-                movies.push({
-                    title,
-                    url,
-                    site : movieSite.site
-                })
-            })
-        } else{
-            $('a:contains("20")', html).each(function(){
-                const title = $(this).text()
-                const url = $(this).attr('href')
-                movies.push({
-                    title,
-                    url,
-                    site : movieSite.site
-                })
-            })
-        }
-        
-    }).catch(err => console.log(err))
-})
+ };
+
+
 
 app.get('/', (req,res)=>{
-    res.json('welcome to my movies api')
+    res.json({ping:'pong'})
 })
 
-app.get('/movies', (req,res)=>{
-  res.json(movies)
+app.post('/search', async(req,res)=>{
+    const searchParam = req.body.searchParam
+    const prod = await fetchProducts(searchParam)
+  res.json({message:"success", prod})
 })
 
 app.listen(port, ()=>{
